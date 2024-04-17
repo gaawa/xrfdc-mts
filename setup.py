@@ -20,7 +20,7 @@ setup(
     license='BSD 3-Clause',
     author="Gaawa",
     author_email="",
-    packages=['xrfdc-mts'],
+    packages=['xrfdc_mts'],
     package_data={
         '': ['*.py', '*.c'],
     },
