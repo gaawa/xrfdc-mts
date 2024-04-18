@@ -65,7 +65,7 @@ class RFdcMTS(RFdc):
         self.dac_sync_config.SysRef_Enable = 1
         self.dac_sync_config.Target_Latency = dacTargetLatency 
         if dacTileEnable:
-            status = xrfdc._lib.XRFdc_MuVltiConverter_Sync(self._instance, 
+            status = xrfdc._lib.XRFdc_MultiConverter_Sync(self._instance, 
                                                            xrfdc._lib.XRFDC_DAC_TILE,
                                                            self.dac_sync_config) 
             self._syncReportDac(status)
