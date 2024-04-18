@@ -173,19 +173,21 @@ class RFdcMTS(RFdc):
         
         if status == xrfdc._lib.XRFDC_MTS_OK:
             print(_INFO  + " : ADC Multi-Tile-Sync completed successfully.")
-        elif status == xrfdc._lib.XRFDC_MTS_TIMEOUT:
-            print(_ERROR + " : ADC Multi-Tile-Sync did not complete successfully, due to a timeout.")
-        elif status == xrfdc._lib.XRFDC_MTS_NOT_SUPPORTED:
-            print(_ERROR + " : ADC Multi-Tile-Sync not supported.")
-        elif status == xrfdc._lib.XRFDC_MTS_DTC_INVALID:
-            print(_ERROR + " : DTC invalid.")
-        elif status == xrfdc._lib.XRFDC_MTS_NOT_ENABLED:
-            print(_ERROR + " : ADC Multi-Tile-Sync is not enabled.")
-        elif status == xrfdc._lib.XRFDC_MTS_SYSREF_GATE_ERROR:
-            print(_ERROR + " : Sysref gate error.")
-        elif status == xrfdc._lib.XRFDC_MTS_SYSREF_FREQ_NDONE:
-            print(_ERROR + " : Sysref frequency error.")
-        elif status == xrfdc._lib.XRFDC_MTS_BAD_REF_TILE:
-            print(_ERROR + " : Bad reference tile.")
+
         else:
+            if status & xrfdc._lib.XRFDC_MTS_TIMEOUT == xrfdc._lib.XRFDC_MTS_TIMEOUT:
+                print(_ERROR + " : ADC Multi-Tile-Sync did not complete successfully, due to a timeout.")
+            if status & xrfdc._lib.XRFDC_MTS_NOT_SUPPORTED == xrfdc._lib.XRFDC_MTS_NOT_SUPPORTED:
+                print(_ERROR + " : ADC Multi-Tile-Sync not supported.")
+            if status & xrfdc._lib.XRFDC_MTS_DTC_INVALID == xrfdc._lib.XRFDC_MTS_DTC_INVALID:
+                print(_ERROR + " : DTC invalid.")
+            if status & xrfdc._lib.XRFDC_MTS_NOT_ENABLED == xrfdc._lib.XRFDC_MTS_NOT_ENABLED:
+                print(_ERROR + " : ADC Multi-Tile-Sync is not enabled.")
+            if status & xrfdc._lib.XRFDC_MTS_SYSREF_GATE_ERROR == xrfdc._lib.XRFDC_MTS_SYSREF_GATE_ERROR:
+                print(_ERROR + " : Sysref gate error.")
+            if status & xrfdc._lib.XRFDC_MTS_SYSREF_FREQ_NDONE == xrfdc._lib.XRFDC_MTS_SYSREF_FREQ_NDONE:
+                print(_ERROR + " : Sysref frequency error.")
+            if status & xrfdc._lib.XRFDC_MTS_BAD_REF_TILE == xrfdc._lib.XRFDC_MTS_BAD_REF_TILE:
+                print(_ERROR + " : Bad reference tile.")
+            
             print(_ERROR + " : ADC Multi-Tile-Sync did not complete successfully.")
