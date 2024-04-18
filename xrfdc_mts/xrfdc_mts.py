@@ -26,18 +26,54 @@ xrfdc._ffi.cdef(header_text)
 RFdc.bindto = []
 
 class RFdcMTS(RFdc):
+    """Class for handling Multi-Tile Synchronization (MTS).
+    
+    This class is bound to the IP xilinx.com:ip:usp_rf_data_converter:2.6, 
+    xilinx.com:ip:usp_rf_data_converter:2.4 or xilinx.com:ip:usp_rf_data_converter:2.3.
+    Derived from the RFdc class.
+
+    Members
+    -------
+    dac_sync_config: XRFdc_MultiConverter_Sync_Config
+        Struct containing DAC MTS config.
+    adc_sync_config: XRFdc_MultiConverter_Sync_Config
+        Struct containing ADC MTS config.
+    """
 
     bindto = ["xilinx.com:ip:usp_rf_data_converter:2.6",
               "xilinx.com:ip:usp_rf_data_converter:2.4", 
               "xilinx.com:ip:usp_rf_data_converter:2.3"]
 
     def __init__(self, description):
+        """Class is constructed by PYNQ.
+        
+        Creates pointers to sync config structs.
+        """
         super().__init__(description)
         self.dac_sync_config = xrfdc._ffi.new("XRFdc_MultiConverter_Sync_Config*")
         self.adc_sync_config = xrfdc._ffi.new("XRFdc_MultiConverter_Sync_Config*")
         
     def autoRunMTS(self, dacTileEnable, adcTileEnable):
-        """Let the driver handle the latency synchronization sequence."""
+        """Let the driver handle the latency synchronization sequence.
+        
+        First measures the latency with input argument of -1.
+        Then, it uses the results to calculate and apply the appropriate
+        latency margin.
+        Calls MTS synchronisation for the second time with the measured latancy+margin.
+        
+        Parameters
+        ----------
+        dacTileEnable: int
+            0: disable all DAC tiles
+            bit 1: enable tile0
+            bit 2: enable tile1
+            etc...
+        adcTileEnable: int
+            0: disable all ADC tiles
+            bit 1: enable tile0
+            bit 2: enable tile1
+            etc...
+        """
         if adcTileEnable:
             raise RuntimeError("Auto MTS sequencing for ADC tiles are not yet implemented!")
         
@@ -48,6 +84,31 @@ class RFdcMTS(RFdc):
         self.syncMTS(dacLatency+dacMargin, dacTileEnable, 0, adcTileEnable)
         
     def initMTS(self, dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable):
+        """Initialize MTS.
+        
+        Initializes the sync config struct using XRFdc_MultiConverter_Init and then
+        configures with the given target latency with XRFdc_MultiConverter_Sync.
+        The resulting latency can be read from dac_sync_config.Latency or adc_sync_config.Latency.
+        When the target latency is set to -1, the base latency can be measured.
+        
+        Parameters
+        ----------
+        dacTargetLatency: int
+            Target latency for DAC
+        dacTileEnable: int
+            0: disable all DAC tiles
+            bit 1: enable tile0
+            bit 2: enable tile1
+            etc...
+        adcTargetLatency: int
+            Target latency for ADC
+        adcTileEnable: int
+            0: disable all ADC tiles
+            bit 1: enable tile0
+            bit 2: enable tile1
+            etc...
+            
+        """
         dacLatency = None
         adcLatency = None 
 
@@ -64,6 +125,28 @@ class RFdcMTS(RFdc):
         self.syncMTS(dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable)
         
     def syncMTS(self, dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable):
+        """
+        Calls converter MTS sync function.
+
+        Calls XRFdc_MultiConverter_Sync for the chosen converters with the given target latencies.
+        
+        Parameters
+        ----------
+        dacTargetLatency: int
+            Target latency for DAC
+        dacTileEnable: int
+            0: disable all DAC tiles
+            bit 1: enable tile0
+            bit 2: enable tile1
+            etc...
+        adcTargetLatency: int
+            Target latency for ADC
+        adcTileEnable: int
+            0: disable all ADC tiles
+            bit 1: enable tile0
+            bit 2: enable tile1
+            etc...
+        """
         # Synchronize DAC
         self.dac_sync_config.RefTile = 0x0
         self.dac_sync_config.Tiles = dacTileEnable
@@ -87,16 +170,28 @@ class RFdcMTS(RFdc):
             self._syncReportAdc(status)
 
     def sysrefDisable(self):
+        """Disable RFDC SYSREF receive."""
         status = xrfdc._lib.XRFdc_MTS_Sysref_Config(self._instance, self.dac_sync_config, self.adc_sync_config, 0)
         print('disable sysref func status: ', status)
         return status
 
     def sysrefEnable(self):
+        """Enable RFDC SYSREF receive"""
         status = xrfdc._lib.XRFdc_MTS_Sysref_Config(self._instance, self.dac_sync_config, self.adc_sync_config, 1)
         print('enable sysref func status: ', status)
         return status
 
     def _syncReportAdc(self, status):
+        """Prints MTS report for ADC.
+        
+        It checks for errors using the status return of XRFdc_MultiConverter_Sync function
+        and reports the contents of ADC sync config struct.
+    
+        Parameters
+        ----------
+        status: int
+            Status return of XRFdc_MultiConverter_Sync function called for ADC
+        """
         factor = xrfdc._ffi.new("unsigned int*")
 
         if status != xrfdc._lib.XRFDC_MTS_OK:
@@ -131,6 +226,16 @@ class RFdcMTS(RFdc):
             
             
     def _syncReportDac(self, status):
+        """Prints MTS report for DAC.
+        
+        It checks for errors using the status return of XRFdc_MultiConverter_Sync function
+        and reports the contents of DAC sync config struct.
+    
+        Parameters
+        ----------
+        status: int
+            Status return of XRFdc_MultiConverter_Sync function called for DAC
+        """
         factor = xrfdc._ffi.new("unsigned int*")
         if status != xrfdc._lib.XRFDC_MTS_OK:
             self._MTS_Sync_Status_Msg(status)
@@ -163,6 +268,7 @@ class RFdcMTS(RFdc):
             print("###############################################")
         
     def printLatency(self):
+        """Print latency and offset."""
         print('*** printing latency ***')
         for i in range(4):
             print("ADC Latency: "+str(self.adc_sync_config.Latency[i]))
@@ -170,6 +276,16 @@ class RFdcMTS(RFdc):
         print("*****")
 
     def _MTS_Sync_Status_Msg(self, status):
+        """Checks for MTS error.
+        
+        Uses the status return of XRFdc_MultiConverter_Sync function to determine possible errors.
+        Throws RuntimeError in case an error is found.
+        
+        Parameters
+        ----------
+        status: int
+            Status return of XRFdc_MultiConverter_Sync function 
+        """
         
         if status == xrfdc._lib.XRFDC_MTS_OK:
             print(_INFO  + " : ADC Multi-Tile-Sync completed successfully.")
