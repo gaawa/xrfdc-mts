@@ -190,4 +190,4 @@ class RFdcMTS(RFdc):
             if status & xrfdc._lib.XRFDC_MTS_BAD_REF_TILE == xrfdc._lib.XRFDC_MTS_BAD_REF_TILE:
                 print(_ERROR + " : Bad reference tile.")
             
-            print(_ERROR + " : ADC Multi-Tile-Sync did not complete successfully.")
+            raise RuntimeError("ADC Multi-Tile-Sync did not complete successfully")
