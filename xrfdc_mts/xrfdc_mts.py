@@ -51,9 +51,14 @@ class RFdcMTS(RFdc):
         dacLatency = None
         adcLatency = None 
 
+        ConfigPtrDAC = xrfdc._ffi.new("int*")
+        PLL_CodesPtrDAC = xrfdc._ffi.new("int*")
+        ConfigPtrADC = xrfdc._ffi.new("int*")
+        PLL_CodesPtrADC = xrfdc._ffi.new("int*")
+
         # initialize config structs for DAC and ADC
-        xrfdc._lib.XRFdc_MultiConverter_Init(self.dac_sync_config, 0, 0, 0)
-        xrfdc._lib.XRFdc_MultiConverter_Init(self.adc_sync_config, 0, 0, 0)
+        xrfdc._lib.XRFdc_MultiConverter_Init(self.dac_sync_config, ConfigPtrDAC, PLL_CodesPtrDAC, 0)
+        xrfdc._lib.XRFdc_MultiConverter_Init(self.adc_sync_config, ConfigPtrADC, PLL_CodesPtrADC, 0)
         
         # synchronize the MTS with the provided target latency
         self.syncMTS(dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable)
