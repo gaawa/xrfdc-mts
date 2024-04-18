@@ -81,6 +81,13 @@ class RFdcMTS(RFdc):
                                                           self.adc_sync_config)
             self._syncReportAdc(status)
 
+    def sysrefDisable(self):
+        self.status3 = xrfdc._lib.XRFdc_MTS_Sysref_Config(self._instance, self._DAC_Sync_Config, self._ADC_Sync_Config, 0)
+        print(self.status3)
+
+    def sysrefEnable(self):
+        self.status3 = xrfdc._lib.XRFdc_MTS_Sysref_Config(self._instance, self._DAC_Sync_Config, self._ADC_Sync_Config, 1)
+        print(self.status3)
 
     def _syncReportAdc(self, status):
         factor = xrfdc._ffi.new("unsigned int*")
@@ -158,7 +165,7 @@ class RFdcMTS(RFdc):
     def _MTS_Sync_Status_Msg(self, status):
         
         if status == xrfdc._lib.XRFDC_MTS_OK:
-            print(_INFO + " : ADC Multi-Tile-Sync completed successfully.")
+            print(_INFO  + " : ADC Multi-Tile-Sync completed successfully.")
         elif status == xrfdc._lib.XRFDC_MTS_TIMEOUT:
             print(_ERROR + " : ADC Multi-Tile-Sync did not complete successfully, due to a timeout.")
         elif status == xrfdc._lib.XRFDC_MTS_NOT_SUPPORTED:
