@@ -87,12 +87,14 @@ class RFdcMTS(RFdc):
             self._syncReportAdc(status)
 
     def sysrefDisable(self):
-        self.status3 = xrfdc._lib.XRFdc_MTS_Sysref_Config(self._instance, self._DAC_Sync_Config, self._ADC_Sync_Config, 0)
-        print(self.status3)
+        status = xrfdc._lib.XRFdc_MTS_Sysref_Config(self._instance, self.dac_sync_config, self.adc_sync_config, 0)
+        print('disable sysref func status: ', status)
+        return status
 
     def sysrefEnable(self):
-        self.status3 = xrfdc._lib.XRFdc_MTS_Sysref_Config(self._instance, self._DAC_Sync_Config, self._ADC_Sync_Config, 1)
-        print(self.status3)
+        status = xrfdc._lib.XRFdc_MTS_Sysref_Config(self._instance, self.dac_sync_config, self.adc_sync_config, 1)
+        print('enable sysref func status: ', status)
+        return status
 
     def _syncReportAdc(self, status):
         factor = xrfdc._ffi.new("unsigned int*")
