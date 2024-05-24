@@ -305,18 +305,53 @@ class RFdcMTS(RFdc):
 
         else:
             if status & xrfdc._lib.XRFDC_MTS_TIMEOUT == xrfdc._lib.XRFDC_MTS_TIMEOUT:
-                print(_ERROR + " : Multi-Tile-Sync did not complete successfully, due to a timeout.")
+                raise MtsTimeoutException
             if status & xrfdc._lib.XRFDC_MTS_NOT_SUPPORTED == xrfdc._lib.XRFDC_MTS_NOT_SUPPORTED:
-                print(_ERROR + " : Multi-Tile-Sync not supported.")
+                raise MtsNotSupportedException    
             if status & xrfdc._lib.XRFDC_MTS_DTC_INVALID == xrfdc._lib.XRFDC_MTS_DTC_INVALID:
-                print(_ERROR + " : DTC invalid.")
+                raise MtsDtcInvalidException    
             if status & xrfdc._lib.XRFDC_MTS_NOT_ENABLED == xrfdc._lib.XRFDC_MTS_NOT_ENABLED:
-                print(_ERROR + " : Multi-Tile-Sync is not enabled.")
+                raise MtsNotEnabledException    
             if status & xrfdc._lib.XRFDC_MTS_SYSREF_GATE_ERROR == xrfdc._lib.XRFDC_MTS_SYSREF_GATE_ERROR:
-                print(_ERROR + " : Sysref gate error.")
+                raise MtsSysrefGateError    
             if status & xrfdc._lib.XRFDC_MTS_SYSREF_FREQ_NDONE == xrfdc._lib.XRFDC_MTS_SYSREF_FREQ_NDONE:
-                print(_ERROR + " : Sysref frequency error.")
+                raise MtsSysrefFreqNdoneException    
             if status & xrfdc._lib.XRFDC_MTS_BAD_REF_TILE == xrfdc._lib.XRFDC_MTS_BAD_REF_TILE:
-                print(_ERROR + " : Bad reference tile.")
-            
-            raise RuntimeError("Multi-Tile-Sync did not complete successfully")
+                raise MtsBadRefTileException
+        
+
+# custom exceptions
+class MtsTimeoutException(RuntimeError):
+    def __init__(self):
+        self.msg = "Multi-Tile-Sync did not complete successfully, due to a timeout."
+        super().__init__(self.msg)
+
+class MtsNotSupportedException(RuntimeError):
+    def __init__(self):
+        self.msg = "Multi-Tile-Sync not supported."
+        super().__init__(self.msg)
+
+class MtsDtcInvalidException(RuntimeError):
+    def __init__(self):
+        self.msg = "DTC invalid."
+        super().__init__(self.msg)
+
+class MtsNotEnabledException(RuntimeError):
+    def __init__(self):
+        self.msg = "Multi-Tile-Sync is not enabled."
+        super().__init__(self.msg)
+
+class MtsSysrefGateError(RuntimeError):
+    def __init__(self):
+        self.msg = "Sysref gate error."
+        super().__init__(self.msg)
+
+class MtsSysrefFreqNdoneException(RuntimeError):
+    def __init__(self):
+        self.msg = "Sysref frequency error."
+        super().__init__(self.msg)
+
+class MtsBadRefTileException(RuntimeError):
+    def __init__(self):
+        self.msg = "Bad reference tile."
+        super().__init__(self.msg)
