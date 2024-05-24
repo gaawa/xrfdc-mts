@@ -74,14 +74,27 @@ class RFdcMTS(RFdc):
             bit 2: enable tile1
             etc...
         """
-        if adcTileEnable:
-            raise RuntimeError("Auto MTS sequencing for ADC tiles are not yet implemented!")
-        
         self.initMTS(-1, dacTileEnable, -1, adcTileEnable)
-        dacLatency = max(self.dac_sync_config.Latency)
-        dacMargin = 16
         
-        self.syncMTS(dacLatency+dacMargin, dacTileEnable, 0, adcTileEnable)
+        # fixted margin of 16 samples for DACs
+        dacTargetLatency = 0
+        if dacTileEnable:
+            dacLatency = max(self.dac_sync_config.Latency)
+            dacMargin = 16
+            dacTargetLatency = dacLatency + dacMargin
+            
+        
+        # margin for ADCs must be nr. of samples er cycle * decimation facotr
+        # Config is read from the tile 0 block 0 as this is the required ADC for MTS.
+        adcTargetLatency = 0
+        if adcTileEnable:
+            adcLatency = max(self.adc_sync_config.Latency)
+            adcSampPerCycle = self.adc_tiles[0].blocks[0].FabRdVldWords
+            adcDecimationFactor = self.adc_tiles[0].blocks[0].DecimationFactor
+            margin = adcSampPerCycle * adcDecimationFactor
+            adcTargetLatency = adcLatency + margin
+            
+        self.syncMTS(dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable)
         
     def initMTS(self, dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable):
         """Initialize MTS.
