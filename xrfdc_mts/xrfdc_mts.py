@@ -53,7 +53,7 @@ class RFdcMTS(RFdc):
         self.dac_sync_config = xrfdc._ffi.new("XRFdc_MultiConverter_Sync_Config*")
         self.adc_sync_config = xrfdc._ffi.new("XRFdc_MultiConverter_Sync_Config*")
         
-    def autoRunMTS(self, dacTileEnable, adcTileEnable):
+    def autoRunMTS(self, dacTileEnable, adcTileEnable, verbose=False):
         """Let the driver handle the latency synchronization sequence.
         
         First measures the latency with input argument of -1.
@@ -74,7 +74,7 @@ class RFdcMTS(RFdc):
             bit 2: enable tile1
             etc...
         """
-        self.initMTS(-1, dacTileEnable, -1, adcTileEnable)
+        self.initMTS(-1, dacTileEnable, -1, adcTileEnable, verbose=verbose)
         
         # fixted margin of 16 samples for DACs
         dacTargetLatency = 0
@@ -94,9 +94,9 @@ class RFdcMTS(RFdc):
             margin = adcSampPerCycle * adcDecimationFactor
             adcTargetLatency = adcLatency + margin
             
-        self.syncMTS(dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable)
+        self.syncMTS(dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable, verbose=verbose)
         
-    def initMTS(self, dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable):
+    def initMTS(self, dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable, verbose=False):
         """Initialize MTS.
         
         Initializes the sync config struct using XRFdc_MultiConverter_Init and then
@@ -135,9 +135,9 @@ class RFdcMTS(RFdc):
         xrfdc._lib.XRFdc_MultiConverter_Init(self.adc_sync_config, ConfigPtrADC, PLL_CodesPtrADC, 0)
         
         # synchronize the MTS with the provided target latency
-        self.syncMTS(dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable)
+        self.syncMTS(dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable, verbose=verbose)
         
-    def syncMTS(self, dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable):
+    def syncMTS(self, dacTargetLatency, dacTileEnable, adcTargetLatency, adcTileEnable, verbose=False):
         """
         Calls converter MTS sync function.
 
@@ -169,7 +169,7 @@ class RFdcMTS(RFdc):
             status = xrfdc._lib.XRFdc_MultiConverter_Sync(self._instance, 
                                                            xrfdc._lib.XRFDC_DAC_TILE,
                                                            self.dac_sync_config) 
-            self._syncReportDac(status)
+            self._syncReportDac(status, verbose=verbose)
 
         # Synchronize ADC
         self.adc_sync_config.RefTile = 0x0
@@ -180,7 +180,7 @@ class RFdcMTS(RFdc):
             status = xrfdc._lib.XRFdc_MultiConverter_Sync(self._instance, 
                                                           xrfdc._lib.XRFDC_ADC_TILE,
                                                           self.adc_sync_config)
-            self._syncReportAdc(status)
+            self._syncReportAdc(status, verbose=verbose)
 
     def sysrefDisable(self):
         """Disable RFDC SYSREF receive."""
@@ -194,7 +194,7 @@ class RFdcMTS(RFdc):
         print('enable sysref func status: ', status)
         return status
 
-    def _syncReportAdc(self, status):
+    def _syncReportAdc(self, status, verbose):
         """Prints MTS report for ADC.
         
         It checks for errors using the status return of XRFdc_MultiConverter_Sync function
@@ -211,34 +211,35 @@ class RFdcMTS(RFdc):
             self._MTS_Sync_Status_Msg(status)
         else:
             self._MTS_Sync_Status_Msg(status)
+            
+            if verbose:
+                print("========== ADC Multi-Tile Sync Report ==========")
+                for i in range(0,4):
+                    if (1<<i) & self.adc_sync_config.Tiles:
+                        xrfdc._lib.XRFdc_GetDecimationFactor(self._instance, i, 0, factor)
+                        print("ADC{}: Latency(T1) = {}, Adjusted Delay Offset({}) = {}, Marker Delay = {}".format(i,
+                                                                                                                  self.adc_sync_config.Latency[i],
+                                                                                                                  factor[0],
+                                                                                                                  self.adc_sync_config.Offset[i],
+                                                                                                                  self.adc_sync_config.Marker_Delay))
+                        print("=== MTS ADC Tile{} PLL Report ===".format(i))
+                        print("    ADC{}: PLL DTC Code ={} ".format(i, self.adc_sync_config.DTC_Set_PLL.DTC_Code[i]))
+                        print("    ADC{}: PLL Num Windows ={} ".format(i, self.adc_sync_config.DTC_Set_PLL.Num_Windows[i]))
+                        print("    ADC{}: PLL Max Gap ={} ".format(i, self.adc_sync_config.DTC_Set_PLL.Max_Gap[i]))
+                        print("    ADC{}: PLL Min Gap ={} ".format(i, self.adc_sync_config.DTC_Set_PLL.Min_Gap[i]))
+                        print("    ADC{}: PLL Max Overlap ={} ".format(i, self.adc_sync_config.DTC_Set_PLL.Max_Overlap[i]))
+                        print("=== MTS ADC Tile{} T1 Report ===".format(i))
+                        print("    ADC{}: T1 DTC Code ={} ".format(i, self.adc_sync_config.DTC_Set_T1.DTC_Code[i]))
+                        print("    ADC{}: T1 Num Windows ={} ".format(i, self.adc_sync_config.DTC_Set_T1.Num_Windows[i]))
+                        print("    ADC{}: T1 Max Gap ={} ".format(i, self.adc_sync_config.DTC_Set_T1.Max_Gap[i]))
+                        print("    ADC{}: T1 Min Gap ={} ".format(i, self.adc_sync_config.DTC_Set_T1.Min_Gap[i]))
+                        print("    ADC{}: T1 Max Overlap ={}".format(i, self.adc_sync_config.DTC_Set_T1.Max_Overlap[i]))
 
-            print("========== ADC Multi-Tile Sync Report ==========")
-            for i in range(0,4):
-                if (1<<i) & self.adc_sync_config.Tiles:
-                    xrfdc._lib.XRFdc_GetDecimationFactor(self._instance, i, 0, factor)
-                    print("ADC{}: Latency(T1) = {}, Adjusted Delay Offset({}) = {}, Marker Delay = {}".format(i,
-                                                                                                              self.adc_sync_config.Latency[i],
-                                                                                                              factor[0],
-                                                                                                              self.adc_sync_config.Offset[i],
-                                                                                                              self.adc_sync_config.Marker_Delay))
-                    print("=== MTS ADC Tile{} PLL Report ===".format(i))
-                    print("    ADC{}: PLL DTC Code ={} ".format(i, self.adc_sync_config.DTC_Set_PLL.DTC_Code[i]))
-                    print("    ADC{}: PLL Num Windows ={} ".format(i, self.adc_sync_config.DTC_Set_PLL.Num_Windows[i]))
-                    print("    ADC{}: PLL Max Gap ={} ".format(i, self.adc_sync_config.DTC_Set_PLL.Max_Gap[i]))
-                    print("    ADC{}: PLL Min Gap ={} ".format(i, self.adc_sync_config.DTC_Set_PLL.Min_Gap[i]))
-                    print("    ADC{}: PLL Max Overlap ={} ".format(i, self.adc_sync_config.DTC_Set_PLL.Max_Overlap[i]))
-                    print("=== MTS ADC Tile{} T1 Report ===".format(i))
-                    print("    ADC{}: T1 DTC Code ={} ".format(i, self.adc_sync_config.DTC_Set_T1.DTC_Code[i]))
-                    print("    ADC{}: T1 Num Windows ={} ".format(i, self.adc_sync_config.DTC_Set_T1.Num_Windows[i]))
-                    print("    ADC{}: T1 Max Gap ={} ".format(i, self.adc_sync_config.DTC_Set_T1.Max_Gap[i]))
-                    print("    ADC{}: T1 Min Gap ={} ".format(i, self.adc_sync_config.DTC_Set_T1.Min_Gap[i]))
-                    print("    ADC{}: T1 Max Overlap ={}".format(i, self.adc_sync_config.DTC_Set_T1.Max_Overlap[i]))
-
-            print("ADC Multi-Tile Synchronization is complete.")
-            print("###############################################")
+                print("ADC Multi-Tile Synchronization is complete.")
+                print("###############################################")
             
             
-    def _syncReportDac(self, status):
+    def _syncReportDac(self, status, verbose):
         """Prints MTS report for DAC.
         
         It checks for errors using the status return of XRFdc_MultiConverter_Sync function
@@ -255,30 +256,31 @@ class RFdcMTS(RFdc):
         else:
             self._MTS_Sync_Status_Msg(status)
 
-            print("========== DAC Multi-Tile Sync Report ==========")
-            for i in range(0,4):
-                if (1<<i) & self.dac_sync_config.Tiles:
-                    xrfdc._lib.XRFdc_GetInterpolationFactor(self._instance, i, 0, factor)
-                    print("DAC{}: Latency(T1) = {}, Adjusted Delay Offset({}) = {}, Marker Delay = {}".format(i,
-                                                                                                          self.dac_sync_config.Latency[i],
-                                                                                                          factor[0],
-                                                                                                          self.dac_sync_config.Offset[i],
-                                                                                                          self.dac_sync_config.Marker_Delay))
-                    print("=== MTS DAC Tile{} PLL Report ===".format(i))
-                    print("    DAC{}: PLL DTC Code ={} ".format(i, self.dac_sync_config.DTC_Set_PLL.DTC_Code[i]))
-                    print("    DAC{}: PLL Num Windows ={} ".format(i, self.dac_sync_config.DTC_Set_PLL.Num_Windows[i]))
-                    print("    DAC{}: PLL Max Gap ={} ".format(i, self.dac_sync_config.DTC_Set_PLL.Max_Gap[i]))
-                    print("    DAC{}: PLL Min Gap ={} ".format(i, self.dac_sync_config.DTC_Set_PLL.Min_Gap[i]))
-                    print("    DAC{}: PLL Max Overlap ={} ".format(i, self.dac_sync_config.DTC_Set_PLL.Max_Overlap[i]))
-                    print("=== MTS DAC Tile{} T1 Report ===".format(i))
-                    print("    DAC{}: T1 DTC Code ={} ".format(i, self.dac_sync_config.DTC_Set_T1.DTC_Code[i]))
-                    print("    DAC{}: T1 Num Windows ={} ".format(i, self.dac_sync_config.DTC_Set_T1.Num_Windows[i]))
-                    print("    DAC{}: T1 Max Gap ={} ".format(i, self.dac_sync_config.DTC_Set_T1.Max_Gap[i]))
-                    print("    DAC{}: T1 Min Gap ={} ".format(i, self.dac_sync_config.DTC_Set_T1.Min_Gap[i]))
-                    print("    DAC{}: T1 Max Overlap ={}".format(i, self.dac_sync_config.DTC_Set_T1.Max_Overlap[i]))
+            if verbose:
+                print("========== DAC Multi-Tile Sync Report ==========")
+                for i in range(0,4):
+                    if (1<<i) & self.dac_sync_config.Tiles:
+                        xrfdc._lib.XRFdc_GetInterpolationFactor(self._instance, i, 0, factor)
+                        print("DAC{}: Latency(T1) = {}, Adjusted Delay Offset({}) = {}, Marker Delay = {}".format(i,
+                                                                                                              self.dac_sync_config.Latency[i],
+                                                                                                              factor[0],
+                                                                                                              self.dac_sync_config.Offset[i],
+                                                                                                              self.dac_sync_config.Marker_Delay))
+                        print("=== MTS DAC Tile{} PLL Report ===".format(i))
+                        print("    DAC{}: PLL DTC Code ={} ".format(i, self.dac_sync_config.DTC_Set_PLL.DTC_Code[i]))
+                        print("    DAC{}: PLL Num Windows ={} ".format(i, self.dac_sync_config.DTC_Set_PLL.Num_Windows[i]))
+                        print("    DAC{}: PLL Max Gap ={} ".format(i, self.dac_sync_config.DTC_Set_PLL.Max_Gap[i]))
+                        print("    DAC{}: PLL Min Gap ={} ".format(i, self.dac_sync_config.DTC_Set_PLL.Min_Gap[i]))
+                        print("    DAC{}: PLL Max Overlap ={} ".format(i, self.dac_sync_config.DTC_Set_PLL.Max_Overlap[i]))
+                        print("=== MTS DAC Tile{} T1 Report ===".format(i))
+                        print("    DAC{}: T1 DTC Code ={} ".format(i, self.dac_sync_config.DTC_Set_T1.DTC_Code[i]))
+                        print("    DAC{}: T1 Num Windows ={} ".format(i, self.dac_sync_config.DTC_Set_T1.Num_Windows[i]))
+                        print("    DAC{}: T1 Max Gap ={} ".format(i, self.dac_sync_config.DTC_Set_T1.Max_Gap[i]))
+                        print("    DAC{}: T1 Min Gap ={} ".format(i, self.dac_sync_config.DTC_Set_T1.Min_Gap[i]))
+                        print("    DAC{}: T1 Max Overlap ={}".format(i, self.dac_sync_config.DTC_Set_T1.Max_Overlap[i]))
 
-            print("DAC Multi-Tile Synchronization is complete.")
-            print("###############################################")
+                print("DAC Multi-Tile Synchronization is complete.")
+                print("###############################################")
         
     def printLatency(self):
         """Print latency and offset."""
