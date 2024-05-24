@@ -12,8 +12,8 @@ _red = "\033[0;31m"
 _green = "\033[0;32m"
 
 # Messages
-_INFO = "[" + _green + "INFO" + _black + "]"
-_ERROR = "[" + _red + "ERROR" + _black + "]"
+_INFO = _black + "[" + _green + "INFO" + _black + "]"
+_ERROR = _black + "[" + _red + "ERROR" + _black + "]"
 
 # Extend the CFFI with the local C-file 
 _THIS_DIR = _THIS_DIR = os.path.dirname(__file__)
@@ -288,17 +288,17 @@ class RFdcMTS(RFdc):
         """
         
         if status == xrfdc._lib.XRFDC_MTS_OK:
-            print(_INFO  + " : ADC Multi-Tile-Sync completed successfully.")
+            print(_INFO  + " : Multi-Tile-Sync completed successfully.")
 
         else:
             if status & xrfdc._lib.XRFDC_MTS_TIMEOUT == xrfdc._lib.XRFDC_MTS_TIMEOUT:
-                print(_ERROR + " : ADC Multi-Tile-Sync did not complete successfully, due to a timeout.")
+                print(_ERROR + " : Multi-Tile-Sync did not complete successfully, due to a timeout.")
             if status & xrfdc._lib.XRFDC_MTS_NOT_SUPPORTED == xrfdc._lib.XRFDC_MTS_NOT_SUPPORTED:
-                print(_ERROR + " : ADC Multi-Tile-Sync not supported.")
+                print(_ERROR + " : Multi-Tile-Sync not supported.")
             if status & xrfdc._lib.XRFDC_MTS_DTC_INVALID == xrfdc._lib.XRFDC_MTS_DTC_INVALID:
                 print(_ERROR + " : DTC invalid.")
             if status & xrfdc._lib.XRFDC_MTS_NOT_ENABLED == xrfdc._lib.XRFDC_MTS_NOT_ENABLED:
-                print(_ERROR + " : ADC Multi-Tile-Sync is not enabled.")
+                print(_ERROR + " : Multi-Tile-Sync is not enabled.")
             if status & xrfdc._lib.XRFDC_MTS_SYSREF_GATE_ERROR == xrfdc._lib.XRFDC_MTS_SYSREF_GATE_ERROR:
                 print(_ERROR + " : Sysref gate error.")
             if status & xrfdc._lib.XRFDC_MTS_SYSREF_FREQ_NDONE == xrfdc._lib.XRFDC_MTS_SYSREF_FREQ_NDONE:
@@ -306,4 +306,4 @@ class RFdcMTS(RFdc):
             if status & xrfdc._lib.XRFDC_MTS_BAD_REF_TILE == xrfdc._lib.XRFDC_MTS_BAD_REF_TILE:
                 print(_ERROR + " : Bad reference tile.")
             
-            raise RuntimeError("ADC Multi-Tile-Sync did not complete successfully")
+            raise RuntimeError("Multi-Tile-Sync did not complete successfully")
